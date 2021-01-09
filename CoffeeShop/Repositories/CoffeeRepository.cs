@@ -1,6 +1,7 @@
 ﻿using CoffeeShop.Models;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
+using System;
 using System.Collections.Generic;
 
 namespace CoffeeShop.Repositories
@@ -25,7 +26,9 @@ namespace CoffeeShop.Repositories
                 conn.Open();
                 using (var cmd = conn.CreateCommand())
                 {
-                    cmd.CommandText = @" Select Id, Title, BeanVarietyId FROM Coffee;";
+                    cmd.CommandText = @" Select c.Id, Title, BeanVarietyId, [Name], Region, Notes
+                                         FROM Coffee c
+                                         JOIN BeanVariety bv ON bv.Id = BeanVarietyId;";
                     var reader = cmd.ExecuteReader();
                     var coffeeList = new List<Coffee>();
                     while (reader.Read())
@@ -35,9 +38,22 @@ namespace CoffeeShop.Repositories
                             Id = reader.GetInt32(reader.GetOrdinal("Id")),
                             Title = reader.GetString(reader.GetOrdinal("Title")),
                             BeanVarietyId = reader.GetInt32(reader.GetOrdinal("BeanVarietyId")),
+                            BeanVariety = new BeanVariety
+                            {
+                                Id = reader.GetInt32(reader.GetOrdinal("BeanVarietyId")),
+                                Name = reader.GetString(reader.GetOrdinal("Name")),
+                                Region = reader.GetString(reader.GetOrdinal("Region")),
+                            }
                         };
+
+                        if (!reader.IsDBNull(reader.GetOrdinal("Notes")))
+                        {
+                            coffee.BeanVariety.Notes = reader.GetString(reader.GetOrdinal("Notes"));
+                        }
+
                         coffeeList.Add(coffee);
-                    }
+                    };
+
                     reader.Close();
                     return coffeeList;
                 }
@@ -51,9 +67,10 @@ namespace CoffeeShop.Repositories
                 conn.Open();
                 using (var cmd = conn.CreateCommand())
                 {
-                    cmd.CommandText = @" Select Id, Title, BeanVarietyId 
-                                        FROM Coffee 
-                                        WHERE Id = @id;";
+                    cmd.CommandText = @" Select c.Id, Title, BeanVarietyId, [Name], Region, Notes
+                                         FROM Coffee c
+                                         JOIN BeanVariety bv ON bv.Id = BeanVarietyId
+                                        WHERE c.Id = @id;";
 
                     cmd.Parameters.AddWithValue("@id", id);
 
@@ -68,7 +85,17 @@ namespace CoffeeShop.Repositories
                             Id = reader.GetInt32(reader.GetOrdinal("Id")),
                             Title = reader.GetString(reader.GetOrdinal("Title")),
                             BeanVarietyId = reader.GetInt32(reader.GetOrdinal("BeanVarietyId")),
+                            BeanVariety = new BeanVariety
+                            {
+                                Id = reader.GetInt32(reader.GetOrdinal("BeanVarietyId")),
+                                Name = reader.GetString(reader.GetOrdinal("Name")),
+                                Region = reader.GetString(reader.GetOrdinal("Region")),
+                            }
                         };
+                        if (!reader.IsDBNull(reader.GetOrdinal("Notes")))
+                        {
+                            coffee.BeanVariety.Notes = reader.GetString(reader.GetOrdinal("Notes"));
+                        }
                     }
                     reader.Close();
                     return coffee;
@@ -105,13 +132,12 @@ namespace CoffeeShop.Repositories
                     cmd.CommandText = @"
                         UPDATE Coffee
                            SET Title = @title, 
-                               Notes = @beanVarietyId
+                               BeanVarietyId = @beanVarietyId
                          WHERE Id = @id";
 
                     cmd.Parameters.AddWithValue("@id", coffee.Id);
                     cmd.Parameters.AddWithValue("@title", coffee.Title);
                     cmd.Parameters.AddWithValue("@beanVarietyId", coffee.BeanVarietyId);
-
                     cmd.ExecuteNonQuery();
                 }
 

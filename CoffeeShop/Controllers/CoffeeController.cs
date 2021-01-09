@@ -33,6 +33,14 @@ namespace CoffeeShop.Controllers
             return Ok(variety);
         }
 
+        // https://localhost:5001/api/coffee/
+        [HttpPost]
+        public IActionResult Post(Coffee coffee)
+        {
+            _coffeeRepo.Add(coffee);
+            return CreatedAtAction("Get", new { id = coffee.Id }, coffee);
+        }
+
         // https://localhost:5001/api/coffee/5
         [HttpPut("{id}")]
         public IActionResult Put(int id, Coffee coffee)
